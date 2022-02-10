@@ -77,6 +77,13 @@ covid19_confirmed <- covid19_confirmed_raw %>%
                        values_to = "cases") %>%
   select(-c(Lat, Long_)) ## unwanted columns?
 
+covid19_deaths <- covid19_deaths_raw %>%
+  pivot_longer(cols = -c("UID", "iso2", "iso3", "code3", "FIPS", "Admin2",
+                         "Province_State","Country_Region", "Lat", "Long_", "Combined_Key", "Population"),
+                       names_to = "date",
+                       values_to = "deaths") %>%
+  select(-c(Lat, Long_)) ## unwanted columns?
+
 ```
 
 ```{r clean_data, echo=TRUE}
