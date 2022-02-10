@@ -1,5 +1,5 @@
 ---
-title: "NY Shooting Data from John Hopkins"
+title: "COVID19 Data from John Hopkins"
 author: "Antony Sequeira"
 date: "2/9/2022"
 output: pdf_document
@@ -43,7 +43,7 @@ library(chron)
 ```
 # Data source
 Data is downloaded from CSV link in  
-https://catalog.data.gov/dataset/nypd-shooting-incident-data-historic
+https://catalog.data.gov/dataset/nypd-COVID19-incident-data-historic
 ```{r load_data, echo=TRUE, results=FALSE, message=FALSE}
 ny_url <- "https://data.cityofnewyork.us/api/views/833y-fsy8/rows.csv?accessType=DOWNLOAD"
 ny_data_raw <- read_csv(ny_url)
@@ -183,10 +183,10 @@ The plots show the following:
 - number of police officers per person
 
 ## Bias
-There could be multiple sources of bias in the NY shooting data
+There could be multiple sources of bias in the NY COVID19 data
 
-- the data collection may be biased, it is possible that not all shootings are reported
-- the standard race categories may not reflect the reality of the NY demographics
+- the data collection may be biased, it is possible that not all COVID19s are reported
+- the standard race categories may not reflect the reality of the John Hopkins demographics
 
 I have tried to focus on the boro and seasonality of the data to reduce bias.
 
