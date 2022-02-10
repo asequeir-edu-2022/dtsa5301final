@@ -1,0 +1,219 @@
+---
+title: "NY Shooting Data"
+author: "Antony Sequeira"
+date: "2/9/2022"
+output: pdf_document
+---
+
+# Following script installs the required libraries in Mac OSX
+This section can be copied to a file or input into R console.  
+You could also download it from my repo at https://github.com/asequeir-edu-2022/dtsa5301final
+
+```
+#!/usr/bin/env Rscript
+r = getOption("repos")
+r["CRAN"] = "http://cran.us.r-project.org"
+options(repos = r)
+
+print("Installing R libraries")
+install.packages("chron")
+install.packages("tidyverse")
+install.packages("tinytex")
+
+tinytex::install_tinytex()
+```
+
+# Overview
+For fulfillment of DTSA-5301 finals *NYPD Shooting Incident Data Report* part of the assignment.
+
+The data is free government data about shooting incidents in New York city. 
+The goal is to get, cleanup, analyse, and present the NYPD shooting data.
+The main goal of the analysis is to find out how the incidents relate to the different factors.
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(lubridate)
+library(chron)
+```
+# Data source
+Data is downloaded from CSV link in  
+https://catalog.data.gov/dataset/nypd-shooting-incident-data-historic
+```{r load_data, echo=TRUE, results=FALSE, message=FALSE}
+ny_url <- "https://data.cityofnewyork.us/api/views/833y-fsy8/rows.csv?accessType=DOWNLOAD"
+ny_data_raw <- read_csv(ny_url)
+```
+
+
+## Clean up data
+We clean up the data mainly through the following three operations:  
+- variables to factor for appropriate columns  
+- date types from strings  
+- remove unneeded columns  
+
+```{r clean_data, echo=TRUE}
+ny_data <- ny_data_raw %>%
+  mutate(OCCUR_DATE = mdy(OCCUR_DATE)) %>%
+  mutate(OCCUR_TIME = chron(times=OCCUR_TIME)) %>%
+  mutate(BORO = factor(BORO)) %>%
+  mutate(PRECINCT = factor(PRECINCT)) %>%
+  mutate(PERP_AGE_GROUP = factor(PERP_AGE_GROUP)) %>%
+  mutate(PERP_SEX = factor(PERP_SEX)) %>%
+  mutate(PERP_RACE = factor(PERP_RACE)) %>%
+  mutate(VIC_AGE_GROUP = factor(VIC_AGE_GROUP)) %>%
+  mutate(VIC_SEX = factor(VIC_SEX)) %>%
+  mutate(VIC_RACE = factor(VIC_RACE)) %>%
+  select (-c(JURISDICTION_CODE, LOCATION_DESC, X_COORD_CD, Y_COORD_CD, Latitude, Longitude, INCIDENT_KEY))
+```
+
+## Missing data columns and plans to handle them
+There is missing data in the following columns:
+```{r missing_data, echo=TRUE}
+names(which(colSums(is.na(ny_data_raw)) > 0))
+```
+Missing data in factor columns `PERP_SEX` etc. are handled already as a factor.  
+I do not plan to use `JURISDICTION_CODE` and `LOCATION_DESC`.  
+So, for this data, nothing more needs to be done for missing data handling. 
+
+### Summary of the cleaned up data
+
+```{r summary, echo=TRUE}
+summary(ny_data)
+```
+Turning columns into factors shows total counts for columns such as `BORO`.  
+The summary also shows the breakdown of total incidents by factor type columns such as `PERP_AGE_GROUP`.  
+
+
+## Visualization and Analysis
+
+### Generate necessary analysis ready data.  
+Prepare a few different slices of the data for visualizations.  
+
+```{r try1}
+ny_data_sum <- ny_data %>%
+  group_by(BORO, VIC_AGE_GROUP) %>% 
+  mutate(BORO_BY_VIC_AGE = n()) %>%  # occurrences by victim age group by boro
+  ungroup()  %>%
+  group_by(month = lubridate::floor_date(OCCUR_DATE, "month")) %>%
+  mutate(month_sum = sum(n())) %>% # occurrences by month
+  ungroup() %>%
+  group_by(month, BORO) %>%
+  mutate(month_by_boro = sum(n())) %>%
+  ungroup()
+```
+
+```{r sum2}
+ny_data_sum2 <- ny_data %>%
+  group_by(BORO, VIC_AGE_GROUP) %>% 
+  summarize(BORO_BY_VAG = n(), .groups = 'drop') %>%
+  ungroup()
+```
+
+```{r sum3}
+ny_data_sum3 <- ny_data %>%
+  group_by(month = lubridate::floor_date(OCCUR_DATE, "month")) %>%
+  summarise(month_sum = sum(n())) %>% # occurrences by month
+  ungroup()
+```
+
+## Visualizations
+### Variations by the month of the year
+We plot the total incidents by month.  
+```{r plot1}
+ny_data_sum3 %>%
+ggplot(aes(x = month, y = month_sum)) +
+geom_line(aes(color = "month")) +
+geom_point(aes(color = "month")) +
+geom_line(aes(y=month_sum, color = "month_sum")) +
+geom_point(aes(y=month_sum, color = "month_sum")) +
+labs(title = "Incidents in NY by month", y = NULL)
+```
+The above plot shows that the number of incidents vary seasonally.  
+To see the 2020 peak more clearly, we plot a shorter time span.  
+```{r plot2}
+ny_data_sum3 %>%
+  filter(year(month) > 2019) %>% 
+  ggplot(aes(x = month, y = month_sum)) +
+  geom_line(aes(color = "month")) +
+  geom_point(aes(color = "month")) +
+  geom_line(aes(y=month_sum, color = "month_sum")) +
+  geom_point(aes(y=month_sum, color = "month_sum")) +
+  labs(title = "Incidents in NY by month for years 2019 onwards", y = NULL)
+```
+
+This shows a clear peak in July of 2020.  
+
+### Variations by borough
+Generate the counts by borough.  
+```{r plot4}
+ny_data_sum %>%
+  group_by(month_by_boro) %>%
+  ggplot(aes(x=month, y=month_by_boro, group=BORO, color=BORO)) +
+  geom_line() + 
+  labs(title = "Incidents in NY by month by Boro", y = NULL)
+```
+
+Get a smaller time span to see a zoomed in view.  
+```{r plot5}
+ny_data_sum %>%
+  filter(year(month) > 2015) %>% 
+  filter(year(month) < 2019) %>%
+  group_by(month_by_boro) %>%
+  ggplot(aes(x=month, y=month_by_boro, group=BORO, color=BORO)) +
+  geom_line() + 
+  labs(title = "Plot fewer years to show peaks", y = NULL)
+```
+
+## Analysis
+The plots show the following:  
+
+- seasonal peaks mostly in summer
+- higher levels of incidents based on the boro - Staten Island is lowest and Bronx and Brooklyn seem to be the higher end.
+- the incidents show unusual higher numbers in first quarter of 2020
+
+
+## Questions raised by the visualization and analysis (to be investigated)
+- population of boros (Staten Island might have much smaller population) may be too different
+- factors not in data such as income
+- number of police officers per person
+
+## Bias
+There could be multiple sources of bias in the NY shooting data
+
+- the data collection may be biased, it is possible that not all shootings are reported
+- the standard race categories may not reflect the reality of the NY demographics
+
+I have tried to focus on the boro and seasonality of the data to reduce bias.
+
+## Modeling
+```{r}
+ny_data_doy <- ny_data_sum %>%
+  filter(year(OCCUR_DATE)< 2020) %>% # avoiding covid years
+  group_by(doy = yday(OCCUR_DATE)) %>%
+  mutate(doy_sum = sum(n())) %>%
+  ungroup()
+
+mod <- lm(doy_sum ~ doy, data=ny_data_doy)
+summary(mod)
+
+ny_data_pred <-  ny_data_doy %>% mutate(doy_sum_pred = predict(mod))
+
+ny_data_pred %>% ggplot() +
+  geom_point(aes( x = doy, y = doy_sum), color = "blue") +
+  # compare with predicted
+  geom_point(aes( x = doy, y = doy_sum_pred), color = "red")
+
+```
+
+
+The plot clearly shows that the linear model does not fit the data of incidents given a day of the year.  
+It looks like we need a different model (other than linear) to predict incidents given any day of the year. 
+
+I hope to learn more about statistical modelling in future data science courses so I can model such data better.
+
+## Session info
+```{r, echo=FALSE}
+sessionInfo()
+```
