@@ -67,8 +67,20 @@ We clean up the data mainly through the following three operations:
 - variables to factor for appropriate columns  
 - date types from strings  
 - remove unneeded columns  
+- pivot
 
 ```{r clean_data, echo=TRUE}
+covid19_confirmed <- covid19_confirmed_raw %>%
+  pivot_longer(cols = -c("UID", "iso2", "iso3", "code3", "FIPS", "Admin2",
+                         "Province_State","Country_Region", "Lat", "Long_", "Combined_Key"),
+                       names_to = "date",
+                       values_to = "cases") %>%
+  select(-c(Lat, Long_)) ## unwanted columns?
+
+```
+
+```{r clean_data, echo=TRUE}
+
 ny_data <- ny_data_raw %>%
   mutate(OCCUR_DATE = mdy(OCCUR_DATE)) %>%
   mutate(OCCUR_TIME = chron(times=OCCUR_TIME)) %>%
