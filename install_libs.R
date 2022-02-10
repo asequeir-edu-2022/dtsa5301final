@@ -7,3 +7,5 @@ print("Installing R libraries")
 install.packages("chron")
 install.packages("tidyverse")
 install.packages("tinytex")
+
+tinytex::install_tinytex()
