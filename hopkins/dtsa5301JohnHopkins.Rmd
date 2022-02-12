@@ -196,4 +196,45 @@ covid19_by_state %>%
   
   labs(title = "COVID19 in US", y = NULL)
 ```
+## Summarize by monthly numbers
+```{r}
+covid19_by_state_month <- covid19_by_state %>%
+  group_by(Province_State,  month = lubridate::floor_date(date, "month")) %>%
+  summarise(cases = min(cases), # use value from the 1st of the month
+            deaths = min(deaths), 
+            Population=max(Population),
+            cases_per_million = cases * 1000000 / Population,
+            deaths_per_million = deaths * 1000000 / Population
+            ) %>%  # occurrences by month
+  
+#  mutate(cases_per_million = cases * 1000000 / Population) %>%
+#  mutate(deaths_per_million = deaths * 1000000 / Population)  %>%
+
+  ungroup()
+# summary(covid19_by_state_month)
+```
+
+## Compare a few states
+```{r}
+covid19_by_state_month %>%
+  group_by(month) %>%
+  ggplot(aes(x=month, y=cases, group=Province_State, color=Province_State)) +
+  geom_line() + 
+  labs(title = "Cases by US State", y = NULL)
+```
+
+```{r}
+print.data.frame(covid19_by_state_month %>% 
+                   filter(month == as.Date("2022-01-01")) %>%
+                   select (-c(month, cases_per_million)) %>%
+                   arrange(cases)
+                 )
+```
+```{r}
+print.data.frame(covid19_by_state_month %>% 
+                   filter(month == as.Date("2022-01-01")) %>%
+                   select (-c(month, cases_per_million)) %>%
+                   arrange(deaths_per_million)
+                 )
+```
 
