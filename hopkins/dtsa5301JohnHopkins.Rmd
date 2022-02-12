@@ -51,6 +51,8 @@ https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_c
 Two of the time series tables are for the US confirmed cases and deaths, reported at the county level.  
 They are `time_series_covid19_confirmed_US.csv` and `time_series_covid19_deaths_US.csv` respectively.
 
+We will focus on analyzing the data for United States only.
+
 These two files will provide our data for the analysis.
 
 ```{r load_data, echo=TRUE, results=FALSE, message=FALSE}
@@ -128,6 +130,15 @@ covid19 <- covid19 %>%
 summary(covid19)
 ```
 
+### filter data
+```{r filter_data, echo=TRUE}
+covid19 <- covid19 %>%
+  filter(cases > 0)
+```
+
+### Data issues
+There are deaths with population zero. This is because the deaths are recorded with unassigned county (Alaska).
+
 # EARLY EXIT
 ```{r summary_data, echo=TRUE}
 knitr::knit_exit()
@@ -138,7 +149,20 @@ knitr::knit_exit()
 ## Visualization and Analysis
 
 ### Generate necessary analysis ready data.  
-Prepare a few different slices of the data for visualizations.  
+
+Generate per state aggregated data.
+
+```{r}
+coovid19_by_state <- covid19 %>%
+  group_by(Province_State, Country_Region, date) %>%
+  summarise(cases = sum(cases), deaths = sum(deaths), Population = sum(Population)) %>%
+  mutate(deaths_per_million = deaths * 1000000 / Population) %>%
+  select(Province_State, Country_Region, date, 
+         cases, deaths, deaths_per_million, Population) %>%
+  ungroup()
+```
+
+
 
 ```{r try1}
 ny_data_sum <- ny_data %>%
