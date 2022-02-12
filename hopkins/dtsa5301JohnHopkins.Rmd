@@ -326,6 +326,8 @@ california_data_pred  <- california_data %>%
   mutate(pred = predict(model))
 ```
 
+## Plot the model predictions
+
 Plot the model data with predicted values.
 
 ```{r}
@@ -334,14 +336,14 @@ california_data_pred %>%
   
   geom_point(aes(color = "deaths")) +
   
-  geom_point(aes(y = pred, color = "pred")) +
+  geom_point(aes(y = pred, color = "predicted")) +
   
   # scale_y_log10() +
   
   theme(legend.position = "bottom",
         axis.text.x = element_text(angle = 90)) +
   
-  labs(title = "COVID19 in US model fit - predict deaths from cases in California", y = NULL)
+  labs(title = "COVID19 model fit - predict deaths from cases in California", y = NULL)
 ```
 
 ## Bias
