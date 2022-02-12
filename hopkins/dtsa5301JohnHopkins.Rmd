@@ -8,6 +8,8 @@ output: pdf_document
 # Overview
 For fulfillment of DTSA-5301 finals *COVID19 dataset from the Johns Hopkins github site* part of the assignment.
 
+The report hopes to analyse the COVID19 data from John Hopkins and produce some insights.
+
 ## Following script installs the required libraries in Mac OS
 This section can be copied to a file or input into R console.  
 You could also download it from my repo at https://github.com/asequeir-edu-2022/dtsa5301final
