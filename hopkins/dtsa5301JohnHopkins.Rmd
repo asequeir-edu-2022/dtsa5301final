@@ -214,6 +214,8 @@ covid19_by_state_month <- covid19_by_state %>%
 # summary(covid19_by_state_month)
 ```
 
+TBD slice_min and slice_max
+
 ## Compare a few states
 ```{r}
 covid19_by_state_month %>%
@@ -237,4 +239,67 @@ print.data.frame(covid19_by_state_month %>%
                    arrange(deaths_per_million)
                  )
 ```
+
+```{r}
+covid19_by_state <- covid19_by_state %>%
+  mutate(new_cases = cases - lag(cases),
+         new_deaths = deaths - lag(deaths)
+         )
+```
+
+```{r}
+covid19_by_state %>%
+  filter (year(date) == 2020) %>%
+  filter (month(date) == 3) %>%
+  # filter (month(date) == 4 | month(date) == 5) %>%
+  # filter (day(date) < 25) %>%
+  ggplot(aes(x = date, y = new_cases)) +
+  
+  geom_point(aes(color = "new_cases")) +
+  
+  geom_point(aes(y = new_deaths, color = "new_deaths")) +
+  
+  scale_y_log10() +
+  
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 90)) +
+  
+  labs(title = "COVID19 in US new cases and new deaths", y = NULL)
+```
+
+
+```{r}
+# try population to cases model
+#model_data <- covid19_by_state_month %>% 
+#  filter(month == as.Date("2022-01-01"))
+#summary(model_data)
+california_data = covid19_by_state_month %>% 
+  filter(cases > 0) %>%
+  filter(Province_State == "California") 
+model <- lm(deaths ~ cases, data = california_data)
+summary(model)
+#x_grid <- seq(80000,28000)
+#new_df <- tibble(cases_per_million = x_grid)
+#model_data_pred <- model_data %>% mutate(pred = predict(model))
+california_data_pred  <- california_data %>%
+  mutate(pred = predict(model))
+```
+
+```{r}
+california_data_pred %>%
+  ggplot(aes(x = cases, y = deaths)) +
+  
+  geom_point(aes(color = "deaths")) +
+  
+  geom_point(aes(y = pred, color = "pred")) +
+  
+  # scale_y_log10() +
+  
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 90)) +
+  
+  labs(title = "COVID19 in US model fit - predict deaths from cases", y = NULL)
+```
+
+
 
