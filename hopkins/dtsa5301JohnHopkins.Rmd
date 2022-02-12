@@ -175,3 +175,25 @@ covid19_by_state %>%
   
   labs(title = "COVID19 in US", y = NULL)
 ```
+
+Plot for just one month
+```{r}
+covid19_by_state %>%
+  filter (year(date) == 2020) %>%
+  filter (month(date) == 3) %>%
+  # filter (month(date) == 4 | month(date) == 5) %>%
+  # filter (day(date) < 25) %>%
+  ggplot(aes(x = date, y = cases)) +
+  
+  geom_point(aes(color = "cases")) +
+  
+  geom_point(aes(y = deaths, color = "deaths")) +
+  
+  scale_y_log10() +
+  
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 90)) +
+  
+  labs(title = "COVID19 in US", y = NULL)
+```
+
