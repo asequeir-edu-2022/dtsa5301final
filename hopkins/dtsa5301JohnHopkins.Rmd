@@ -5,7 +5,10 @@ date: "2/9/2022"
 output: pdf_document
 ---
 
-# Following script installs the required libraries in Mac OSX
+# Overview
+For fulfillment of DTSA-5301 finals *COVID19 dataset from the Johns Hopkins github site* part of the assignment.
+
+## Following script installs the required libraries in Mac OS
 This section can be copied to a file or input into R console.  
 You could also download it from my repo at https://github.com/asequeir-edu-2022/dtsa5301final
 
@@ -23,24 +26,20 @@ install.packages("tinytex")
 tinytex::install_tinytex()
 ```
 
-# Overview
-For fulfillment of DTSA-5301 finals *COVID19 dataset from the Johns Hopkins github site* part of the assignment.
+## Load libraries
+```{r setup, echo=TRUE, results='hide'}
+knitr::opts_chunk$set(echo = TRUE, results = "hide", warning = FALSE)
 
-# TODO explain data source
-# TODO explain data
-# TODO clean up data
-# TODO create various ARDs
-# TODO create plots (2)
-# TODO model (1)
-# TODO bias
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
-library(tidyverse)
-library(lubridate)
-library(chron)
+library(tidyverse, warn.conflicts=F, quietly=T)
+library(lubridate, warn.conflicts=F, quietly=T)
+library(chron, warn.conflicts=F, quietly=T)
 ```
+
+```{r reset, echo=TRUE, results='hide'}
+knitr::opts_chunk$set(echo = TRUE, results = "echo")
+```
+
+
 # Data source
 The main data source is the github repository at
 https://github.com/CSSEGISandData/COVID-19
@@ -48,12 +47,10 @@ https://github.com/CSSEGISandData/COVID-19
 We will use the data from the folder at  
 https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series
 
-Two of the time series tables are for the US confirmed cases and deaths, reported at the county level.  
+Two of the time series files are for the US confirmed cases and deaths, reported at the county level.  
 They are `time_series_covid19_confirmed_US.csv` and `time_series_covid19_deaths_US.csv` respectively.
 
-We will focus on analyzing the data for United States only.
-
-These two files will provide our data for the analysis.
+The report will focus on analyzing the data for United States only.
 
 ```{r load_data, echo=TRUE, results=FALSE, message=FALSE}
 covid19_confirmed_url = "https://github.com/CSSEGISandData/COVID-19/raw/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv"
@@ -63,38 +60,40 @@ covid19_confirmed_raw <- read_csv(covid19_confirmed_url)
 covid19_deaths_raw <- read_csv(covid19_deaths_url)
 ```
 
+## Data description and cleaning
+The `Province_State` column contains the name of the US State and the `Admin2`
+contains the County name for which daily data is collected.  
+These are the main location identifiers in this data.  
+The date columns are in long form and contain the cases and death counts.  
 
-## Clean up data
 We clean up the data mainly through the following three operations:  
-- variables to factor for appropriate columns  
-- date types from strings  
-- remove unneeded columns  
-- pivot
+ - variables to factor for appropriate columns  
+ - date types from strings  
+ - remove unneeded columns  
+ - pivot from long date columns
 
 ### Pivot long 
 
+This converts the long form date columns to a single date column with values. 
 ```{r pivot_data, echo=TRUE}
 covid19_confirmed <- covid19_confirmed_raw %>%
-  pivot_longer(cols = -c("UID", "iso2", "iso3", "code3", "FIPS", "Admin2",
-                         "Province_State","Country_Region", "Lat", "Long_", "Combined_Key"),
+  pivot_longer(cols = -c(UID:Combined_Key),
                        names_to = "date",
                        values_to = "cases") %>%
-  select(-c(Lat, Long_)) ## unwanted columns?
+  select(-c(Lat, Long_)) ## remove unwanted columns
 
 covid19_deaths <- covid19_deaths_raw %>%
-  pivot_longer(cols = -c("UID", "iso2", "iso3", "code3", "FIPS", "Admin2",
-                         "Province_State","Country_Region", "Lat", "Long_", "Combined_Key", "Population"),
+  pivot_longer(cols = -c(UID:Population),
                        names_to = "date",
                        values_to = "deaths") %>%
-  select(-c(Lat, Long_)) ## unwanted columns?
+  select(-c(Lat, Long_)) ## remove unwanted columns
 
 ```
 
 ### Join cases and deaths data and change column types (factor, date)
 
-
+We change date strings to dates and identifier kind of string columns to factors.  
 ```{r join_factor_data, echo=TRUE}
-
 covid19 <- covid19_confirmed %>%
   full_join(covid19_deaths) %>%
   mutate(iso3 = factor(iso3)) %>%
@@ -102,11 +101,7 @@ covid19 <- covid19_confirmed %>%
   mutate(Province_State = factor(Province_State)) %>%
   mutate(Country_Region = factor(Country_Region)) %>%
   mutate(date = mdy(date)) %>%
-  # mutate(new_cases = cases - lag(cases)) %>%
-  # mutate(new_deaths = deaths - lag(deaths)) %>%
   select (-c(UID, iso2, code3, FIPS))
-
-# covid19 <- covid19 %>% filter(cases == 0)
 ```
 
 
@@ -114,10 +109,10 @@ covid19 <- covid19_confirmed %>%
 There is missing data in the following columns:
 ```{r missing_data, echo=TRUE}
 names(which(colSums(is.na(covid19)) > 0))
-# filter(covid19, is.na(Admin2))
 ```
 
-I do not need cruise ships data for this report.
+Looks like this data is for places such as cruise ships and non states such as Virgin Islands.
+I will ignore such data for this report.
 ```{r cruise_ships_remove, echo=TRUE}
 covid19 <- covid19 %>%
   filter(iso3 == "USA") %>%  # filter non states for simplicity
@@ -131,21 +126,23 @@ summary(covid19)
 ```
 
 ### filter data
+I will remove data with zero cases for simplicity.  
 ```{r filter_data, echo=TRUE}
 covid19 <- covid19 %>%
   filter(cases > 0)
 ```
 
 ### Data issues
-There are deaths with population zero. This is because the deaths are recorded with unassigned county (Alaska).
-
-
+There are deaths with population zero. This is because the deaths are recorded with unassigned county
+(Alaska for example).
+These will have to be removed if we need any division by population operation for any individual date.
+I do not plan to do that.
 
 ## Visualization and Analysis
 
 ### Generate necessary analysis ready data.  
 
-Generate per state aggregated data.
+Generate per state aggregated data using grouping by location and summing the columns needed.
 
 ```{r}
 covid19_by_state <- covid19 %>%
@@ -158,6 +155,8 @@ covid19_by_state <- covid19 %>%
 ```
 
 ### Plot 
+This plot shows the accumulated cases and deaths over the whole of US.
+The plot looks thick since each state/county gets a point per day.
 ```{r}
 covid19_by_state %>%
   ggplot(aes(x = date, y = cases)) +
@@ -176,7 +175,29 @@ covid19_by_state %>%
   labs(title = "COVID19 in US", y = NULL)
 ```
 
-Plot for just one month
+Plotting for the state of California only.
+```{r}
+covid19_by_state %>%
+  filter(Province_State == "California") %>%
+  ggplot(aes(x = date, y = cases)) +
+  
+  geom_line(aes(color = "cases")) +
+  geom_point(aes(color = "cases")) +
+  
+  geom_line(aes(y = deaths, color = "deaths")) +
+  geom_point(aes(y = deaths, color = "deaths")) +
+  
+  scale_y_log10() +
+  
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 90)) +
+  
+  labs(title = "COVID19 in California", y = NULL)
+```
+
+
+Plot for the month of March, 2020 only. 
+This shows the range of values on a given day across all the US states.
 ```{r}
 covid19_by_state %>%
   filter (year(date) == 2020) %>%
@@ -194,9 +215,13 @@ covid19_by_state %>%
   theme(legend.position = "bottom",
         axis.text.x = element_text(angle = 90)) +
   
-  labs(title = "COVID19 in US", y = NULL)
+  labs(title = "COVID19 in US in March of 2020", y = NULL)
 ```
+
 ## Summarize by monthly numbers
+
+Aggregating the data by getting one point per month per state.
+
 ```{r}
 covid19_by_state_month <- covid19_by_state %>%
   group_by(Province_State,  month = lubridate::floor_date(date, "month")) %>%
@@ -206,17 +231,12 @@ covid19_by_state_month <- covid19_by_state %>%
             cases_per_million = cases * 1000000 / Population,
             deaths_per_million = deaths * 1000000 / Population
             ) %>%  # occurrences by month
-  
-#  mutate(cases_per_million = cases * 1000000 / Population) %>%
-#  mutate(deaths_per_million = deaths * 1000000 / Population)  %>%
-
   ungroup()
-# summary(covid19_by_state_month)
 ```
 
-TBD slice_min and slice_max
 
-## Compare a few states
+Plotting this data shows the variations in the pandemic across the US states.
+
 ```{r}
 covid19_by_state_month %>%
   group_by(month) %>%
@@ -225,21 +245,44 @@ covid19_by_state_month %>%
   labs(title = "Cases by US State", y = NULL)
 ```
 
+### Analyze a single day
+
+Get data for a single day and show the top and bottom states by cases.
+
+
 ```{r}
-print.data.frame(covid19_by_state_month %>% 
+all_data = covid19_by_state_month %>% 
                    filter(month == as.Date("2022-01-01")) %>%
-                   select (-c(month, cases_per_million)) %>%
-                   arrange(cases)
-                 )
-```
-```{r}
-print.data.frame(covid19_by_state_month %>% 
-                   filter(month == as.Date("2022-01-01")) %>%
-                   select (-c(month, cases_per_million)) %>%
-                   arrange(deaths_per_million)
-                 )
+                   select (-c(month, cases_per_million))
+
 ```
 
+```{r}
+head(all_data %>% arrange(cases))
+```
+
+```{r}
+tail(all_data %>% arrange(cases))
+```
+
+Same data ordered by `cases_per_million` shows a different ordering.
+
+```{r}
+all_data = covid19_by_state_month %>% 
+                   filter(month == as.Date("2022-01-01")) %>%
+                   select (-c(month, deaths_per_million))
+
+```
+
+```{r}
+head(all_data %>% arrange(cases_per_million))
+```
+```{r}
+tail(all_data %>% arrange(cases_per_million))
+```
+
+## Data for model fitting
+Generate daily cases from the cumulative.
 ```{r}
 covid19_by_state <- covid19_by_state %>%
   mutate(new_cases = cases - lag(cases),
@@ -247,14 +290,14 @@ covid19_by_state <- covid19_by_state %>%
          )
 ```
 
+Plot them for a day to see they look right.
 ```{r}
 covid19_by_state %>%
   filter (year(date) == 2020) %>%
   filter (month(date) == 3) %>%
-  # filter (month(date) == 4 | month(date) == 5) %>%
-  # filter (day(date) < 25) %>%
+
   ggplot(aes(x = date, y = new_cases)) +
-  
+
   geom_point(aes(color = "new_cases")) +
   
   geom_point(aes(y = new_deaths, color = "new_deaths")) +
@@ -267,23 +310,23 @@ covid19_by_state %>%
   labs(title = "COVID19 in US new cases and new deaths", y = NULL)
 ```
 
+Filter data for California only for a better fit.
 
 ```{r}
-# try population to cases model
-#model_data <- covid19_by_state_month %>% 
-#  filter(month == as.Date("2022-01-01"))
-#summary(model_data)
 california_data = covid19_by_state_month %>% 
   filter(cases > 0) %>%
   filter(Province_State == "California") 
+```
+
+Model the data using linear model to fit deaths to cases.
+```{r}
 model <- lm(deaths ~ cases, data = california_data)
 summary(model)
-#x_grid <- seq(80000,28000)
-#new_df <- tibble(cases_per_million = x_grid)
-#model_data_pred <- model_data %>% mutate(pred = predict(model))
 california_data_pred  <- california_data %>%
   mutate(pred = predict(model))
 ```
+
+Plot the model data with predicted values.
 
 ```{r}
 california_data_pred %>%
@@ -298,7 +341,19 @@ california_data_pred %>%
   theme(legend.position = "bottom",
         axis.text.x = element_text(angle = 90)) +
   
-  labs(title = "COVID19 in US model fit - predict deaths from cases", y = NULL)
+  labs(title = "COVID19 in US model fit - predict deaths from cases in California", y = NULL)
+```
+
+## Bias
+There could be multiple sources of bias in the COVID19 data:
+
+- The data collection is likely biased since this data is collected over many jurisdictions with possibly different rules of reporting.
+- The data also spans a time window that 2 years where data collection process may not be uniform.
+- I have picked California to fit a model. It is possible that a linear model may not fit for all states.
+
+## Session info
+```{r, echo=FALSE}
+sessionInfo()
 ```
 
 
