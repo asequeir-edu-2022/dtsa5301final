@@ -5,7 +5,14 @@ date: "2/9/2022"
 output: pdf_document
 ---
 
-# Following script installs the required libraries in Mac OSX
+# Overview
+For fulfillment of DTSA-5301 finals *NYPD Shooting Incident Data Report* part of the assignment.
+
+The data is free government data about shooting incidents in New York city. 
+The goal is to get, cleanup, analyse, and present the NYPD shooting data.
+The main goal of the analysis is to find out how the incidents relate to the different factors.
+
+## Following script installs the required libraries in Mac OS
 This section can be copied to a file or input into R console.  
 You could also download it from my repo at https://github.com/asequeir-edu-2022/dtsa5301final
 
@@ -23,21 +30,19 @@ install.packages("tinytex")
 tinytex::install_tinytex()
 ```
 
-# Overview
-For fulfillment of DTSA-5301 finals *NYPD Shooting Incident Data Report* part of the assignment.
+## Load libraries
+```{r setup, echo=TRUE, results='hide'}
+knitr::opts_chunk$set(echo = TRUE, results = "hide", warning = FALSE)
 
-The data is free government data about shooting incidents in New York city. 
-The goal is to get, cleanup, analyse, and present the NYPD shooting data.
-The main goal of the analysis is to find out how the incidents relate to the different factors.
-
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
-library(tidyverse)
-library(lubridate)
-library(chron)
+library(tidyverse, warn.conflicts=F, quietly=T)
+library(lubridate, warn.conflicts=F, quietly=T)
+library(chron, warn.conflicts=F, quietly=T)
 ```
+
+```{r reset, echo=TRUE, results='hide'}
+knitr::opts_chunk$set(echo = TRUE, results = "echo")
+```
+
 # Data source
 Data is downloaded from CSV link in  
 https://catalog.data.gov/dataset/nypd-shooting-incident-data-historic
@@ -128,7 +133,8 @@ geom_line(aes(color = "month")) +
 geom_point(aes(color = "month")) +
 geom_line(aes(y=month_sum, color = "month_sum")) +
 geom_point(aes(y=month_sum, color = "month_sum")) +
-labs(title = "Incidents in NY by month", y = NULL)
+xlab("Year/Month") +  ylab("Incidents") +
+labs(title = "Incidents in NY by month")
 ```
 The above plot shows that the number of incidents vary seasonally.  
 To see the 2020 peak more clearly, we plot a shorter time span.  
@@ -140,7 +146,8 @@ ny_data_sum3 %>%
   geom_point(aes(color = "month")) +
   geom_line(aes(y=month_sum, color = "month_sum")) +
   geom_point(aes(y=month_sum, color = "month_sum")) +
-  labs(title = "Incidents in NY by month for years 2019 onwards", y = NULL)
+  xlab("Year/Month") +  ylab("Incidents") +
+  labs(title = "Incidents in NY by month for years 2019 onwards")
 ```
 
 This shows a clear peak in July of 2020.  
@@ -152,7 +159,8 @@ ny_data_sum %>%
   group_by(month_by_boro) %>%
   ggplot(aes(x=month, y=month_by_boro, group=BORO, color=BORO)) +
   geom_line() + 
-  labs(title = "Incidents in NY by month by Boro", y = NULL)
+  xlab("Year/Month") +  ylab("Incidents") +
+  labs(title = "Incidents in NY by month by Boro")
 ```
 
 Get a smaller time span to see a zoomed in view.  
@@ -163,7 +171,8 @@ ny_data_sum %>%
   group_by(month_by_boro) %>%
   ggplot(aes(x=month, y=month_by_boro, group=BORO, color=BORO)) +
   geom_line() + 
-  labs(title = "Plot fewer years to show peaks", y = NULL)
+  xlab("Year/Month") +  ylab("Incidents") +
+  labs(title = "Plot fewer years to show peaks")
 ```
 
 ## Analysis
@@ -203,7 +212,10 @@ ny_data_pred <-  ny_data_doy %>% mutate(doy_sum_pred = predict(mod))
 ny_data_pred %>% ggplot() +
   geom_point(aes( x = doy, y = doy_sum), color = "blue") +
   # compare with predicted
-  geom_point(aes( x = doy, y = doy_sum_pred), color = "red")
+  geom_point(aes( x = doy, y = doy_sum_pred), color = "red") +
+   ylab("daily incidents") + xlab("day of the year") +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 90)) 
 
 ```
 
