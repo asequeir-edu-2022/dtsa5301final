@@ -69,7 +69,9 @@ We clean up the data mainly through the following three operations:
 - remove unneeded columns  
 - pivot
 
-```{r clean_data, echo=TRUE}
+### Pivot long 
+
+```{r pivot_data, echo=TRUE}
 covid19_confirmed <- covid19_confirmed_raw %>%
   pivot_longer(cols = -c("UID", "iso2", "iso3", "code3", "FIPS", "Admin2",
                          "Province_State","Country_Region", "Lat", "Long_", "Combined_Key"),
@@ -86,38 +88,51 @@ covid19_deaths <- covid19_deaths_raw %>%
 
 ```
 
-```{r clean_data, echo=TRUE}
+### Join cases and deaths data and change column types (factor, date)
 
-ny_data <- ny_data_raw %>%
-  mutate(OCCUR_DATE = mdy(OCCUR_DATE)) %>%
-  mutate(OCCUR_TIME = chron(times=OCCUR_TIME)) %>%
-  mutate(BORO = factor(BORO)) %>%
-  mutate(PRECINCT = factor(PRECINCT)) %>%
-  mutate(PERP_AGE_GROUP = factor(PERP_AGE_GROUP)) %>%
-  mutate(PERP_SEX = factor(PERP_SEX)) %>%
-  mutate(PERP_RACE = factor(PERP_RACE)) %>%
-  mutate(VIC_AGE_GROUP = factor(VIC_AGE_GROUP)) %>%
-  mutate(VIC_SEX = factor(VIC_SEX)) %>%
-  mutate(VIC_RACE = factor(VIC_RACE)) %>%
-  select (-c(JURISDICTION_CODE, LOCATION_DESC, X_COORD_CD, Y_COORD_CD, Latitude, Longitude, INCIDENT_KEY))
+
+```{r join_factor_data, echo=TRUE}
+
+covid19 <- covid19_confirmed %>%
+  full_join(covid19_deaths) %>%
+  mutate(iso3 = factor(iso3)) %>%
+  mutate(Admin2 = factor(Admin2)) %>%
+  mutate(Province_State = factor(Province_State)) %>%
+  mutate(Country_Region = factor(Country_Region)) %>%
+  mutate(date = mdy(date)) %>%
+  # mutate(new_cases = cases - lag(cases)) %>%
+  # mutate(new_deaths = deaths - lag(deaths)) %>%
+  select (-c(UID, iso2, code3, FIPS))
+
+# covid19 <- covid19 %>% filter(cases == 0)
 ```
+
 
 ## Missing data columns and plans to handle them
 There is missing data in the following columns:
 ```{r missing_data, echo=TRUE}
-names(which(colSums(is.na(ny_data_raw)) > 0))
+names(which(colSums(is.na(covid19)) > 0))
+# filter(covid19, is.na(Admin2))
 ```
-Missing data in factor columns `PERP_SEX` etc. are handled already as a factor.  
-I do not plan to use `JURISDICTION_CODE` and `LOCATION_DESC`.  
-So, for this data, nothing more needs to be done for missing data handling. 
+
+I do not need cruise ships data for this report.
+```{r cruise_ships_remove, echo=TRUE}
+covid19 <- covid19 %>%
+  filter(iso3 == "USA") %>%  # filter non states for simplicity
+  filter(!is.na(Admin2))     # ignore cruise ships
+```
 
 ### Summary of the cleaned up data
 
 ```{r summary, echo=TRUE}
-summary(ny_data)
+summary(covid19)
 ```
-Turning columns into factors shows total counts for columns such as `BORO`.  
-The summary also shows the breakdown of total incidents by factor type columns such as `PERP_AGE_GROUP`.  
+
+# EARLY EXIT
+```{r summary_data, echo=TRUE}
+knitr::knit_exit()
+```
+
 
 
 ## Visualization and Analysis
