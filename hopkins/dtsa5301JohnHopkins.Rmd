@@ -346,12 +346,15 @@ california_data_pred %>%
   labs(title = "COVID19 model fit - predict deaths from cases in California", y = NULL)
 ```
 
+I have picked California to fit a model. It is possible that a linear model may not fit for all states.
+
 ## Bias
 There could be multiple sources of bias in the COVID19 data:
 
 - The data collection is likely biased since this data is collected over many jurisdictions with possibly different rules of reporting.
 - The data also spans a time window that 2 years where data collection process may not be uniform.
-- I have picked California to fit a model. It is possible that a linear model may not fit for all states.
+- There is no data on other factors beyond cases and population that may impact the death rate from COVID19.
+
 
 ## Session info
 ```{r, echo=FALSE}
