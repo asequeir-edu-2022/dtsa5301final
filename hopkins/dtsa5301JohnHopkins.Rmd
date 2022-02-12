@@ -139,11 +139,6 @@ covid19 <- covid19 %>%
 ### Data issues
 There are deaths with population zero. This is because the deaths are recorded with unassigned county (Alaska).
 
-# EARLY EXIT
-```{r summary_data, echo=TRUE}
-knitr::knit_exit()
-```
-
 
 
 ## Visualization and Analysis
@@ -153,13 +148,37 @@ knitr::knit_exit()
 Generate per state aggregated data.
 
 ```{r}
-coovid19_by_state <- covid19 %>%
+covid19_by_state <- covid19 %>%
   group_by(Province_State, Country_Region, date) %>%
   summarise(cases = sum(cases), deaths = sum(deaths), Population = sum(Population)) %>%
   mutate(deaths_per_million = deaths * 1000000 / Population) %>%
   select(Province_State, Country_Region, date, 
          cases, deaths, deaths_per_million, Population) %>%
   ungroup()
+```
+
+### Plot A
+```{r}
+covid19_by_state %>%
+  ggplot(aes(x = date, y = cases)) +
+  
+  geom_line(aes(color = "cases")) +
+  geom_point(aes(color = "cases")) +
+  
+  geom_line(aes(y = deaths, color = "deaths")) +
+  geom_point(aes(y = deaths, color = "deaths")) +
+  
+  scale_y_log10() +
+  
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 90)) +
+  
+  labs(title = "COVID19 in US", y = NULL)
+```
+
+# EARLY EXIT
+```{r summary_data, echo=TRUE}
+knitr::knit_exit()
 ```
 
 
