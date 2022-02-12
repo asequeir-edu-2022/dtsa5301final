@@ -111,8 +111,8 @@ There is missing data in the following columns:
 names(which(colSums(is.na(covid19)) > 0))
 ```
 
-Looks like this data is for places such as cruise ships and non states such as Virgin Islands.
-I will ignore such data for this report.
+I will ignore such data for this report by filtering.
+
 ```{r cruise_ships_remove, echo=TRUE}
 covid19 <- covid19 %>%
   filter(iso3 == "USA") %>%  # filter non states for simplicity
@@ -156,7 +156,7 @@ covid19_by_state <- covid19 %>%
 
 ### Plot 
 This plot shows the accumulated cases and deaths over the whole of US.
-The plot looks thick since each state/county gets a point per day.
+The plot looks thick since each state gets a point per day.
 ```{r}
 covid19_by_state %>%
   ggplot(aes(x = date, y = cases)) +
